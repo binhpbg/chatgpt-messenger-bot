@@ -1,12 +1,16 @@
 from flask import Flask, request
 import requests
 import os
+import openai
 
 app = Flask(__name__)
 
 VERIFY_TOKEN = os.environ.get("VERIFY_TOKEN")
 PAGE_ACCESS_TOKEN = os.environ.get("PAGE_ACCESS_TOKEN")
 OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY")
+
+# Cấu hình OpenAI SDK
+openai.api_key = OPENAI_API_KEY
 
 def send_message(recipient_id, text):
     url = f"https://graph.facebook.com/v18.0/me/messages?access_token={PAGE_ACCESS_TOKEN}"
@@ -19,22 +23,16 @@ def send_message(recipient_id, text):
     print("📤 FB Send Response:", res.status_code, res.text)
 
 def ask_gpt(prompt):
-    headers = {
-        "Authorization": f"Bearer {OPENAI_API_KEY}",
-        "Content-Type": "application/json"
-    }
-    data = {
-        "model": "gpt-3.5-turbo",
-        "messages": [{"role": "user", "content": prompt}]
-    }
-
     try:
-        res = requests.post("https://api.openai.com/v1/chat/completions", headers=headers, json=data)
-        print("🤖 OpenAI raw response:", res.status_code, res.text)
-        result = res.json()
-        return result['choices'][0]['message']['content']
+        response = openai.chat.completions.create(
+            model="gpt-3.5-turbo",  # hoặc "gpt-4" nếu bạn có quyền truy cập
+            messages=[{"role": "user", "content": prompt}],
+            temperature=0.7,
+        )
+        print("🤖 OpenAI SDK response:", response)
+        return response.choices[0].message.content
     except Exception as e:
-        print("❌ OpenAI API error:", e)
+        print("❌ OpenAI SDK error:", e)
         return "Xin lỗi, tôi không thể trả lời ngay bây giờ."
 
 @app.route("/", methods=["GET"])
@@ -42,7 +40,6 @@ def verify():
     mode = request.args.get("hub.mode")
     token = request.args.get("hub.verify_token")
     challenge = request.args.get("hub.challenge")
-
     if mode == "subscribe" and token == VERIFY_TOKEN:
         return challenge, 200
     return "Invalid verification", 403
@@ -51,7 +48,6 @@ def verify():
 def webhook():
     data = request.get_json()
     print("📩 Nhận data từ Facebook:", data)
-
     for entry in data.get("entry", []):
         for msg_event in entry.get("messaging", []):
             sender_id = msg_event['sender']['id']
