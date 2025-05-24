@@ -16,8 +16,6 @@ def send_message(recipient_id, text):
     }
     headers = {'Content-Type': 'application/json'}
     res = requests.post(url, json=payload, headers=headers)
-
-    # ✅ In phản hồi từ Facebook để debug
     print("📤 FB Send Response:", res.status_code, res.text)
 
 def ask_gpt(prompt):
@@ -32,10 +30,11 @@ def ask_gpt(prompt):
 
     try:
         res = requests.post("https://api.openai.com/v1/chat/completions", headers=headers, json=data)
-        print("🤖 OpenAI raw response:", res.status_code, res.text)  # ✅ In luôn cả JSON text
-        return res.json()['choices'][0]['message']['content']
+        print("🤖 OpenAI raw response:", res.status_code, res.text)
+        result = res.json()
+        return result['choices'][0]['message']['content']
     except Exception as e:
-        print("❌ Exception from OpenAI:", e)
+        print("❌ OpenAI API error:", e)
         return "Xin lỗi, tôi không thể trả lời ngay bây giờ."
 
 @app.route("/", methods=["GET"])
