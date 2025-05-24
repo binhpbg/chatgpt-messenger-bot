@@ -24,7 +24,7 @@ def ask_gpt(prompt):
         "Content-Type": "application/json"
     }
     data = {
-        "model": "gpt-4",
+        "model": "gpt-3.5-turbo",
         "messages": [{"role": "user", "content": prompt}]
     }
 
