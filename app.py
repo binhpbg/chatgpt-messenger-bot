@@ -18,15 +18,23 @@ def send_message(recipient_id, text):
     requests.post(url, json=payload, headers=headers)
 
 def ask_gpt(prompt):
-    headers = {"Authorization": f"Bearer {OPENAI_API_KEY}"}
+    headers = {
+        "Authorization": f"Bearer {OPENAI_API_KEY}",
+        "Content-Type": "application/json"
+    }
     data = {
         "model": "gpt-4",
         "messages": [{"role": "user", "content": prompt}]
     }
+
     res = requests.post("https://api.openai.com/v1/chat/completions", headers=headers, json=data)
+
+    if res.status_code != 200:
+        print("OpenAI API error:", res.status_code, res.text)
+        return "Xin lỗi, tôi không thể trả lời ngay bây giờ."
+
     return res.json()['choices'][0]['message']['content']
 
-# ✅ Đã sửa: Facebook webhook verification
 @app.route("/", methods=["GET"])
 def verify():
     mode = request.args.get("hub.mode")
