@@ -18,7 +18,7 @@ def send_message(recipient_id, text):
     res = requests.post(url, json=payload, headers=headers)
 
     # ✅ In phản hồi từ Facebook để debug
-    print("FB Send Response:", res.status_code, res.text)
+    print("📤 FB Send Response:", res.status_code, res.text)
 
 def ask_gpt(prompt):
     headers = {
@@ -30,14 +30,13 @@ def ask_gpt(prompt):
         "messages": [{"role": "user", "content": prompt}]
     }
 
-    res = requests.post("https://api.openai.com/v1/chat/completions", headers=headers, json=data)
-
-    # ✅ In lỗi nếu có
-    if res.status_code != 200:
-        print("OpenAI API error:", res.status_code, res.text)
+    try:
+        res = requests.post("https://api.openai.com/v1/chat/completions", headers=headers, json=data)
+        print("🤖 OpenAI raw response:", res.status_code, res.text)  # ✅ In luôn cả JSON text
+        return res.json()['choices'][0]['message']['content']
+    except Exception as e:
+        print("❌ Exception from OpenAI:", e)
         return "Xin lỗi, tôi không thể trả lời ngay bây giờ."
-
-    return res.json()['choices'][0]['message']['content']
 
 @app.route("/", methods=["GET"])
 def verify():
@@ -52,14 +51,14 @@ def verify():
 @app.route("/", methods=["POST"])
 def webhook():
     data = request.get_json()
-    print("📩 Nhận data từ Facebook:", data)  # ✅ In data nhận được
+    print("📩 Nhận data từ Facebook:", data)
 
     for entry in data.get("entry", []):
         for msg_event in entry.get("messaging", []):
             sender_id = msg_event['sender']['id']
             if 'message' in msg_event and 'text' in msg_event['message']:
                 user_message = msg_event['message']['text']
-                print("✉️ Người dùng:", user_message)  # ✅ In message user gửi
+                print("✉️ Người dùng gửi:", user_message)
                 reply = ask_gpt(user_message)
                 send_message(sender_id, reply)
     return "ok", 200
