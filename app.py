@@ -26,11 +26,16 @@ def ask_gpt(prompt):
     res = requests.post("https://api.openai.com/v1/chat/completions", headers=headers, json=data)
     return res.json()['choices'][0]['message']['content']
 
+# ✅ Đã sửa: Facebook webhook verification
 @app.route("/", methods=["GET"])
 def verify():
-    if request.args.get("hub.verify_token") == VERIFY_TOKEN:
-        return request.args.get("hub.challenge")
-    return "Invalid verification token", 403
+    mode = request.args.get("hub.mode")
+    token = request.args.get("hub.verify_token")
+    challenge = request.args.get("hub.challenge")
+
+    if mode == "subscribe" and token == VERIFY_TOKEN:
+        return challenge, 200
+    return "Invalid verification", 403
 
 @app.route("/", methods=["POST"])
 def webhook():
