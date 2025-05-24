@@ -15,7 +15,10 @@ def send_message(recipient_id, text):
         "message": {"text": text}
     }
     headers = {'Content-Type': 'application/json'}
-    requests.post(url, json=payload, headers=headers)
+    res = requests.post(url, json=payload, headers=headers)
+
+    # ✅ In phản hồi từ Facebook để debug
+    print("FB Send Response:", res.status_code, res.text)
 
 def ask_gpt(prompt):
     headers = {
@@ -29,6 +32,7 @@ def ask_gpt(prompt):
 
     res = requests.post("https://api.openai.com/v1/chat/completions", headers=headers, json=data)
 
+    # ✅ In lỗi nếu có
     if res.status_code != 200:
         print("OpenAI API error:", res.status_code, res.text)
         return "Xin lỗi, tôi không thể trả lời ngay bây giờ."
@@ -48,11 +52,14 @@ def verify():
 @app.route("/", methods=["POST"])
 def webhook():
     data = request.get_json()
+    print("📩 Nhận data từ Facebook:", data)  # ✅ In data nhận được
+
     for entry in data.get("entry", []):
         for msg_event in entry.get("messaging", []):
             sender_id = msg_event['sender']['id']
             if 'message' in msg_event and 'text' in msg_event['message']:
                 user_message = msg_event['message']['text']
+                print("✉️ Người dùng:", user_message)  # ✅ In message user gửi
                 reply = ask_gpt(user_message)
                 send_message(sender_id, reply)
     return "ok", 200
